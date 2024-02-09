@@ -1,0 +1,126 @@
+features:
+  question back button: True
+---
+id: What is the date on your order
+question: |
+  What is the date on your order?
+subquestion: |
+  Look at the last page of the order. The date is at the end of the order.
+  
+  [FILE docassemble.AKA2JBranding:CertOfDistrib_divorce_custody.PNG, 100%, This is a screenshot of the bottom of the order with the date the court sent your order.]
+fields:
+  - "The date of your order.": final_order_date
+    datatype: date
+    max: ${ today() }
+    required: False
+    # disable if: final_order_period
+    help: |
+      This is the date in the box at the bottom of the last page of your order.
+  - "I do not have the exact date": final_order_period
+    datatype: yesno
+    enable if: 
+      variable: final_order_date
+      is: null
+  - no label: guess_final_order_date
+    enable if: final_order_period 
+    datatype: radio
+    code: |
+      final_order_date_options
+  - note: |
+      #### <i class="fa-regular fa-lightbulb"></i> Learn more ####
+      Most of the time, custody, parenting plan, dividing property and debt, and spousal support are all in 1 order. The date the court sent the order to you is at the bottom of the last page. 
+      
+      Sometimes, the judge makes these orders at different times. 
+      
+      If you want to change orders with different dates, it can be complicated to know which date to use. You may want to talk to a lawyer or contact the [Family Law Self Help Center](https://courts.alaska.gov/shc/family/shcabout.htm#hours) for help.
+
+continue button field: final_order_date_question
+---
+code: |
+
+  final_order_date_options = [
+    {'within 10 days': "It was in the last 10 days."},
+    {'within 30 days': "It was more than 10 days ago, but within the last 30 days."},
+    {'more than 30 days': "It was more than 30 days ago."},
+    {'unknown': "I do not know."}
+              ]
+---
+code: |
+  final_order_date_question
+
+  if (final_order_date != '' and date_difference(starting=final_order_date, ending=today()).days <= 10 ) or (defined('final_order_period') and guess_final_order_date == 'within 10 days'):
+    final_order_date_within_10_days = True
+    final_order_date_within_15_days = False
+    final_order_date_within_30_days = False
+    log('within 10',"console")
+  if (final_order_date != '' and 10 < date_difference(starting=final_order_date, ending=today()).days <= 15 ) or (defined('final_order_period') and guess_final_order_date == 'within 15 days'):
+    final_order_date_within_10_days = False
+    final_order_date_within_15_days = True
+    final_order_date_within_30_days = False    
+    log('within 15',"console")
+  if (final_order_date != '' and 10 < date_difference(starting=final_order_date, ending=today()).days <= 30 ) or (defined('final_order_period') and guess_final_order_date == 'within 30 days'):
+    final_order_date_within_10_days = False
+    # is line below True?
+    final_order_date_within_15_days = True
+    final_order_date_within_30_days = True
+    log('within 30 true',"console")
+  if (final_order_date != '' and 15 < date_difference(starting=final_order_date, ending=today()).days <= 30 ) or (defined('final_order_period') and guess_final_order_date == 'more than 15 days'):
+    final_order_date_within_10_days = False
+    final_order_date_within_15_days = False
+    final_order_date_within_30_days = True
+    log('more than 15 but within 30',"console")
+  if (final_order_date != '' and date_difference(starting=final_order_date, ending=today()).days > 30 ) or (defined('final_order_period') and guess_final_order_date == 'more than 30 days'):
+    final_order_date_within_10_days = False
+    final_order_date_within_15_days = False
+    final_order_date_within_30_days = False
+    log('more than 30',"console")
+  if (defined('final_order_period') and guess_final_order_date == 'unknown'):
+    final_order_date_within_10_days = False
+    final_order_date_within_15_days = False
+    final_order_date_within_30_days = False
+    log('no number of days',"console")
+
+---
+mandatory: True
+question: |
+  Values
+subquestion: |
+  % if defined('final_order_date'):
+  **final_order_date is defined and it is:** ${ final_order_date }
+  % else:
+  final_order_date is not defined 
+  % endif
+  
+  % if defined('final_order_period'):
+  **final_order_period is defined and it is:** ${ final_order_period } and **guess_final_order_date is:** ${ guess_final_order_date }
+  % else:
+  **final_order_period is not defined**
+  % endif
+  **final_order_date_within_10_days:** ${ final_order_date_within_10_days }
+  
+  % if final_order_date_within_10_days:
+  expect after reconsider
+  % endif
+  
+  **final_order_date_within_15_days:** ${ final_order_date_within_15_days }
+  % if final_order_date_within_15_days:
+  expect after motion
+  % endif
+  
+  **final_order_date_within_30_days:** ${ final_order_date_within_30_days }
+  % if final_order_date_within_30_days:   
+  expect after motion
+  % endif
+  
+  % if not (final_order_date_within_30_days and final_order_date_within_15_days and final_order_date_within_10_days) \
+    and ((defined('final_order_period') and guess_final_order_date != 'unknown') \
+      or not(defined('final_order_period'))): 
+  all final order dates are false and guess final order date does not equal 'unknown' so
+  expect after motion
+  % endif
+  
+  % if defined('final_order_period'):
+  **the value of guess_final_order_date is:** ${ guess_final_order_date }
+  % endif
+---  
+  
