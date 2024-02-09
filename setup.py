@@ -46,7 +46,7 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
 setup(name='docassemble.DatePlayForWhatToExpectMotions',
       version='2024.02.09',
       description=('A docassemble extension.'),
-      long_description='# docassemble.DatePlayForWhatToExpectMotions\n\nA docassemble extension.\n\n## Author\n\nCaroline Robinson, CRobinson@akcourts.gov\n\n',
+      long_description='# docassemble.DatePlayForWhatToExpectMotions\r\n\r\nA docassemble extension.\r\n\r\n## Author\r\n\r\nCaroline Robinson, CRobinson@akcourts.gov\r\n\r\n',
       long_description_content_type='text/markdown',
       author='Caroline Robinson',
       author_email='CRobinson@akcourts.gov',

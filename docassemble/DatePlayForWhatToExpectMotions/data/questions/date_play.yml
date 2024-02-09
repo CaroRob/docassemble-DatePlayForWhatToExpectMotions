@@ -1,6 +1,36 @@
 features:
   question back button: True
 ---
+code: |
+  step_list = []
+  if modify:
+    add_unique_step('Certificate', step_list)
+    add_unique_step('File', step_list)
+    add_unique_step('Serve', step_list)
+    add_unique_step('Expect after motion', step_list)
+  if problem \
+    and showifdef('guess_final_order_date') != 'unknown':
+    add_unique_step('Certificate', step_list)
+    add_unique_step('File', step_list)
+    add_unique_step('Serve', step_list)
+    if showifdef('guess_final_order_date') != 'unknown' and not final_order_date_within_10_days:
+      add_unique_step('Expect after motion', step_list)
+    if final_order_date_within_10_days:
+      add_unique_step('Expect after reconsider', step_list)
+
+---
+id: why change your order
+question: |
+  Why do you need to change your court orders?
+subquestion: |
+  There is a problem or things have changed since you got the orders
+fields:
+  - note: Check the reasons you want to change your orders.
+  - There is problem with the order: problem
+    datatype: yesno
+  - Things have changed: modify
+    datatype: yesno
+---
 id: What is the date on your order
 question: |
   What is the date on your order?
@@ -51,33 +81,39 @@ code: |
   if (final_order_date != '' and date_difference(starting=final_order_date, ending=today()).days <= 10 ) or (defined('final_order_period') and guess_final_order_date == 'within 10 days'):
     final_order_date_within_10_days = True
     final_order_date_within_15_days = False
-    final_order_date_within_30_days = False
+    final_order_date_within_30_days = False    
+    final_order_date_more_30_days = False
     log('within 10',"console")
   if (final_order_date != '' and 10 < date_difference(starting=final_order_date, ending=today()).days <= 15 ) or (defined('final_order_period') and guess_final_order_date == 'within 15 days'):
     final_order_date_within_10_days = False
     final_order_date_within_15_days = True
-    final_order_date_within_30_days = False    
+    final_order_date_within_30_days = False
+    final_order_date_more_30_days = False   
     log('within 15',"console")
   if (final_order_date != '' and 10 < date_difference(starting=final_order_date, ending=today()).days <= 30 ) or (defined('final_order_period') and guess_final_order_date == 'within 30 days'):
     final_order_date_within_10_days = False
     # is line below True?
     final_order_date_within_15_days = True
     final_order_date_within_30_days = True
+    final_order_date_more_30_days = False
     log('within 30 true',"console")
   if (final_order_date != '' and 15 < date_difference(starting=final_order_date, ending=today()).days <= 30 ) or (defined('final_order_period') and guess_final_order_date == 'more than 15 days'):
     final_order_date_within_10_days = False
     final_order_date_within_15_days = False
     final_order_date_within_30_days = True
+    final_order_date_more_30_days = False
     log('more than 15 but within 30',"console")
   if (final_order_date != '' and date_difference(starting=final_order_date, ending=today()).days > 30 ) or (defined('final_order_period') and guess_final_order_date == 'more than 30 days'):
     final_order_date_within_10_days = False
     final_order_date_within_15_days = False
     final_order_date_within_30_days = False
+    final_order_date_more_30_days = True
     log('more than 30',"console")
   if (defined('final_order_period') and guess_final_order_date == 'unknown'):
     final_order_date_within_10_days = False
     final_order_date_within_15_days = False
     final_order_date_within_30_days = False
+    final_order_date_more_30_days = False
     log('no number of days',"console")
 
 ---
@@ -85,6 +121,8 @@ mandatory: True
 question: |
   Values
 subquestion: |
+  % if problem:
+  there is a problem with the order
   % if defined('final_order_date'):
   **final_order_date is defined and it is:** ${ final_order_date }
   % else:
@@ -92,35 +130,57 @@ subquestion: |
   % endif
   
   % if defined('final_order_period'):
-  **final_order_period is defined and it is:** ${ final_order_period } and **guess_final_order_date is:** ${ guess_final_order_date }
+  **final_order_period is defined and it is:** ${ final_order_period } 
+  
+  and **guess_final_order_date is:** ${ guess_final_order_date }
   % else:
+  
   **final_order_period is not defined**
   % endif
-  **final_order_date_within_10_days:** ${ final_order_date_within_10_days }
   
+  **final_order_date_within_10_days is:** ${ final_order_date_within_10_days }
+    
   % if final_order_date_within_10_days:
   expect after reconsider
   % endif
   
-  **final_order_date_within_15_days:** ${ final_order_date_within_15_days }
+  **final_order_date_within_15_days is:** ${ final_order_date_within_15_days }
   % if final_order_date_within_15_days:
   expect after motion
   % endif
   
-  **final_order_date_within_30_days:** ${ final_order_date_within_30_days }
+  **final_order_date_within_30_days is:** ${ final_order_date_within_30_days }
   % if final_order_date_within_30_days:   
   expect after motion
   % endif
   
-  % if not (final_order_date_within_30_days and final_order_date_within_15_days and final_order_date_within_10_days) \
-    and ((defined('final_order_period') and guess_final_order_date != 'unknown') \
-      or not(defined('final_order_period'))): 
-  all final order dates are false and guess final order date does not equal 'unknown' so
+  **final_order_date_more_30_days is:** ${ final_order_date_more_30_days }
+  % if final_order_date_more_30_days:   
   expect after motion
   % endif
-  
+ 
   % if defined('final_order_period'):
   **the value of guess_final_order_date is:** ${ guess_final_order_date }
   % endif
+  
+  % endif # there is a problem
+  
+  ### Step_list
+  ${ step_list }
+---
+code: |
+  #### Alternative 2:
+  def add_unique_step(step, step_list):
+    log(1,'console')
+    log(step,'console')
+    is_unique = True
+    for chair in step_list:
+      log(2,'console')
+      log(chair,'console')
+      if chair == step:
+        is_unique = False
+    if is_unique:
+      step_list.append(step)
+  
 ---  
   
